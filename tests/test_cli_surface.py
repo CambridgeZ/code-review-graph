@@ -508,6 +508,7 @@ INVOCATIONS: dict[str, list[str]] = {
     "update": ["update"],
     "postprocess": ["postprocess"],
     "status": ["status"],
+    "usage-stats": ["usage-stats", "--json"],
     "forget": ["forget", "pkg/util.py", "--dry-run"],
     "visualize": ["visualize"],
     "wiki": ["wiki"],

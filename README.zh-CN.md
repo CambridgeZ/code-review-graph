@@ -444,7 +444,7 @@ alias = "project-b"
 </details>
 
 <details>
-<summary><strong>30 个 MCP 工具</strong></summary>
+<summary><strong>31 个 MCP 工具</strong></summary>
 <br>
 
 图谱构建完成后，助手会使用这些工具。
@@ -461,6 +461,7 @@ alias = "project-b"
 | `semantic_search_nodes_tool` | 按名称或语义搜索代码实体 |
 | `embed_graph_tool` | 计算用于语义搜索的向量嵌入 |
 | `list_graph_stats_tool` | 图谱规模与健康状况 |
+| `get_usage_stats_tool` | 按 Git 变更快照累计的本地 token 估算 ([guide](docs/LOCAL_USAGE.md)) |
 | `get_docs_section_tool` | 获取文档章节 |
 | `find_large_functions_tool` | 超过行数阈值的函数、类或文件 |
 | `list_flows_tool` | 按关键度排序的执行流 |
@@ -521,6 +522,8 @@ pip install "code-review-graph[all]"                 # All optional dependencies
 | `CRG_GIT_TIMEOUT` | Git 操作的超时秒数（build / update / watch） | `30` |
 | `CRG_DISCOVERY_TIMEOUT` | 未显式给出文件清单时，用于识别变更的每个 Git 命令的超时秒数。超时会返回错误，而不会报告“没有变更” | `5`（显式设置 `CRG_GIT_TIMEOUT` 时取该值） |
 | `CRG_DATA_DIR` | 存放图谱数据库和生成产物的目录 | - |
+| `CRG_TRACK_USAGE` | 记录分析时观察到的 Git 变更快照及其 token 节省估算 | `0` |
+| `CRG_USAGE_CLIENT` | 标注快照最近一次计量来自哪个客户端 | `unknown` |
 | `CRG_HOOK_WORKTREES` | 设为 `1` 时允许 pre-commit 钩子在链接的 git worktree 中运行 | - |
 | `CRG_EMBEDDING_MODEL` | 本地向量嵌入的默认模型 | `all-MiniLM-L6-v2` |
 | `CRG_ACCEPT_CLOUD_EMBEDDINGS` | 设为 `1` 可抑制云端嵌入的出网警告 | - |
@@ -582,7 +585,7 @@ code-review-graph embed --provider voyage --model voyage-code-3
 
 #### 工具过滤
 
-CRG 默认暴露 30 个 MCP 工具。要把服务器限制到一个子集，使用 `--tools` 或 `CRG_TOOLS` 环境变量：
+CRG 默认暴露 31 个 MCP 工具。要把服务器限制到一个子集，使用 `--tools` 或 `CRG_TOOLS` 环境变量：
 
 ```bash
 # CLI flag

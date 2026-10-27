@@ -444,7 +444,7 @@ alias = "project-b"
 </details>
 
 <details>
-<summary><strong>30 個の MCP ツール</strong></summary>
+<summary><strong>31 個の MCP ツール</strong></summary>
 <br>
 
 グラフを構築すると、アシスタントはこれらを使います。
@@ -461,6 +461,7 @@ alias = "project-b"
 | `semantic_search_nodes_tool` | 名前や意味でコードの実体を検索 |
 | `embed_graph_tool` | セマンティック検索用のベクトル埋め込みを計算 |
 | `list_graph_stats_tool` | グラフの規模と健全性 |
+| `get_usage_stats_tool` | Git 変更スナップショットごとのローカルトークン推定 ([guide](docs/LOCAL_USAGE.md)) |
 | `get_docs_section_tool` | ドキュメントの節を取得 |
 | `find_large_functions_tool` | 行数のしきい値を超える関数、クラス、ファイル |
 | `list_flows_tool` | 重要度順に並べた実行フロー |
@@ -582,7 +583,7 @@ code-review-graph embed --provider voyage --model voyage-code-3
 
 #### ツールの絞り込み
 
-CRG は既定で 30 個の MCP ツールを公開します。サーバーを一部に限定するには、`--tools` か `CRG_TOOLS` 環境変数を使います。
+CRG は既定で 31 個の MCP ツールを公開します。サーバーを一部に限定するには、`--tools` か `CRG_TOOLS` 環境変数を使います。
 
 ```bash
 # CLI flag

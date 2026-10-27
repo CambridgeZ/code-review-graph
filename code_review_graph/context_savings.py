@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from .usage import capture_baseline
+
 CHARS_PER_TOKEN = 4
 
 
@@ -72,6 +74,10 @@ def estimate_context_savings(
 
     if baseline <= 0:
         return None
+
+    capture_baseline(
+        baseline, "full_files" if original_tokens is not None else "full_response",
+    )
 
     saved = max(0, baseline - returned)
     percent = round((saved / baseline) * 100) if baseline else 0

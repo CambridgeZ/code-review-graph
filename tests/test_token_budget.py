@@ -322,6 +322,12 @@ BUDGETS: dict[str, dict[str, Any]] = {
         "default_max": 4_000,
         "worst_max": 4_000,
     },
+    "get_usage_stats_tool": {
+        "default": {},
+        "worst": {"days": 3660},
+        "default_max": 2_000,
+        "worst_max": 2_000,
+    },
     "find_large_functions_tool": {
         "default": {},
         "worst": {"min_lines": 1, "limit": HUGE},

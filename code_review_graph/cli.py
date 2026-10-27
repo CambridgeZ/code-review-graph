@@ -547,6 +547,7 @@ _GRAPH_TOOL_COMMANDS = {
 
 
 _PATH_REPO_COMMANDS = frozenset({
+    "usage-stats",
     "install",
     "init",
     "uninstall",
@@ -898,6 +899,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("-v", "--version", action="store_true", help="Show version and exit")
     sub = ap.add_subparsers(dest="command")
+
+    usage_cmd = sub.add_parser("usage-stats", help="Read local Git snapshot token estimates")
+    usage_cmd.add_argument("--repo", default=None, help="Repository root (auto-detected)")
+    usage_cmd.add_argument("--days", type=_positive_int, default=None, help="Rolling UTC days")
+    usage_cmd.add_argument("--client", default=None, help="Filter by CRG_USAGE_CLIENT label")
+    usage_cmd.add_argument("--json", action="store_true", help="Print the complete JSON report")
 
     # install (primary) + init (alias)
     install_cmd = sub.add_parser("install", help="Register MCP server with AI coding platforms")
@@ -1676,6 +1683,29 @@ def _dispatch() -> None:
 
     _canonicalize_repo_argument(args)
 
+    if args.command == "usage-stats":
+        from .usage import get_usage_stats
+
+        result = get_usage_stats(repo_root=args.repo, days=args.days, client=args.client)
+        if result["status"] != "ok":
+            print(result["error"], file=sys.stderr)
+            raise SystemExit(1)
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            totals = result["totals"]
+            print("Local Git snapshot token usage (estimated; not billing or time saved)")
+            print(f"Ledger: {result['ledger_path']}")
+            print(f"Distinct Git snapshots: {totals['snapshots']:,}")
+            print(f"Analysis observations: {totals['observations']:,}")
+            print(f"Baseline tokens: {totals['baseline_tokens']:,}")
+            print(f"Returned tokens: {totals['returned_tokens']:,}")
+            print(f"Net saved tokens: {totals['net_saved_tokens']:,}")
+            print(f"Extra tokens: {totals['extra_tokens']:,}")
+            print("Collection requires CRG_TRACK_USAGE=1 on the analysis process. "
+                  "Repeated snapshots update their estimate; statistics queries are not counted.")
+        return
+
     if (
         args.command == "refactor"
         and args.mode == "rename"
@@ -2190,17 +2220,19 @@ def _dispatch() -> None:
                     repo_root, result.get("base_resolved") or "HEAD~1"
                 )
                 if changed:
-                    impact = analyze_changes(
-                        store,
-                        changed,
-                        repo_root=str(repo_root),
-                        base=brief_base,
-                    )
-                    original_tokens = estimate_file_tokens(repo_root, changed)
-                    attach_context_savings(
-                        impact,
-                        original_tokens=original_tokens,
-                    )
+                    from .usage import capture_cli_change, record_usage
+
+                    with capture_cli_change(repo_root, brief_base, changed) as usage:
+                        impact = analyze_changes(
+                            store,
+                            changed,
+                            repo_root=str(repo_root),
+                            base=brief_base,
+                        )
+                        original_tokens = estimate_file_tokens(repo_root, changed)
+                        attach_context_savings(impact, original_tokens=original_tokens)
+                    record_usage("update --brief", {"status": "ok", **impact},
+                                 str(repo_root), usage)
                     summary = impact.get("summary", "")
                     if summary:
                         print(summary)
@@ -2511,19 +2543,21 @@ def _dispatch() -> None:
             if not changed:
                 print("No changes detected.")
             else:
-                result = analyze_changes(
-                    store,
-                    changed,
-                    repo_root=str(repo_root),
-                    base=base,
-                    include_churn=getattr(args, "churn", False),
-                    require_vcs=True,
-                )
-                original_tokens = estimate_file_tokens(repo_root, changed)
-                attach_context_savings(
-                    result,
-                    original_tokens=original_tokens,
-                )
+                from .usage import capture_cli_change, record_usage
+
+                with capture_cli_change(repo_root, base, changed) as usage:
+                    result = analyze_changes(
+                        store,
+                        changed,
+                        repo_root=str(repo_root),
+                        base=base,
+                        include_churn=getattr(args, "churn", False),
+                        require_vcs=True,
+                    )
+                    original_tokens = estimate_file_tokens(repo_root, changed)
+                    attach_context_savings(result, original_tokens=original_tokens)
+                record_usage("detect-changes", {"status": "ok", **result},
+                             str(repo_root), usage)
                 if args.brief:
                     from .context_savings import (
                         format_context_savings_panel,

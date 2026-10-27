@@ -165,6 +165,7 @@ class TestLongRunningToolsAreAsync:
     #: JSON read) are allowed to stay synchronous; ``test_no_new_sync_tool``
     #: below fails if that list ever grows.
     HEAVY_TOOLS = {
+        "get_usage_stats_tool",
         "build_or_update_graph_tool",
         "run_postprocess_tool",
         "embed_graph_tool",
@@ -723,6 +724,7 @@ class TestGraphBackedToolProvenanceCoverage:
 
     @pytest.mark.parametrize("tool_name", [
         "get_docs_section_tool", "list_repos_tool", "cross_repo_search_tool",
+        "get_usage_stats_tool",
     ])
     def test_non_single_repository_tools_do_not_claim_one_graph(self, tool_name):
         tool = getattr(crg_main, tool_name)

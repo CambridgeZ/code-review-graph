@@ -161,6 +161,19 @@ environment variables (see the README).
 repo_root: str | None
 ```
 
+#### `get_usage_stats_tool`
+```
+repo_root: str | None
+days: int | None = None     # Rolling UTC window by first observation; 1-3660
+client: str | None = None   # Latest measurement's CRG_USAGE_CLIENT label
+```
+
+Reads cumulative local estimates by distinct Git change snapshot. Enable recording
+with `CRG_TRACK_USAGE=1` on the analysing process. Repeated analysis updates the
+same snapshot; querying these statistics is never recorded. This reads `usage.db`
+without opening the graph. See [local usage accounting](LOCAL_USAGE.md) for the
+collection scope and estimation limits.
+
 #### `find_large_functions_tool`
 ```
 min_lines: int = 50                # Minimum line count
@@ -456,6 +469,9 @@ code-review-graph detect-changes --base HEAD~3 # Custom base revision
 code-review-graph detect-changes --base origin/main # Branch refs use their merge base with HEAD
 code-review-graph detect-changes --brief       # Compact panel with token-savings estimate
 code-review-graph detect-changes --brief --verify  # ...and cross-check against tiktoken
+code-review-graph usage-stats                   # Cumulative recorded Git-change estimates
+code-review-graph usage-stats --days 7 --json    # First observed in the last 7 UTC days
+code-review-graph usage-stats --client codex     # Latest measurement's client label
 code-review-graph detect-changes --churn       # Add opt-in change-frequency risk (CRG_CHURN_WINDOW_DAYS, default 90)
                                                 #   The MCP tools (detect_changes, get_minimal_context) always include it.
                                                 #   Cached per commit; CRG_CHURN_TIMEOUT (5s) and CRG_CHURN_MAX_COMMITS
