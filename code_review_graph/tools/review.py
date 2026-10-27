@@ -23,6 +23,7 @@ from ..incremental import (
     resolve_review_base,
 )
 from ..parser import is_test_file, normalize_file_path
+from ..usage import capture_change
 from ._common import (
     _bounded,
     _error_response,
@@ -996,6 +997,7 @@ def detect_changes_func(
                 "review_priorities": [],
             }
 
+        capture_change(root, base, changed_files)
         original_tokens = estimate_file_tokens(root, changed_files)
 
         # Convert to absolute paths for graph lookup. Graph identity uses

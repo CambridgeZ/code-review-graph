@@ -295,6 +295,7 @@ From the same 2026-08-02 clean-room build at the pinned SHAs above. Embedding co
 | **Export formats** | GraphML (Gephi/yEd), Neo4j Cypher, Obsidian vault, JSON, and SVG (SVG needs matplotlib from the `eval` extra) |
 | **Token benchmarking** | `code_review_graph/token_benchmark.py` measures whole-corpus tokens against graph query tokens per question |
 | **Estimated context savings** | `context_savings` metadata (`estimated`, `saved_tokens`, `saved_percent`) on review, impact, detect-changes and architecture responses |
+| **Local change history** | Opt-in per-Git-change token estimates in `usage.db`; repeated analysis of the same snapshot updates one record ([guide](docs/LOCAL_USAGE.md)) |
 | **Community auto-split** | Communities above 25% of the graph are split recursively with Leiden |
 | **Execution flows** | Call chains from entry points, sorted by weighted criticality |
 | **Community detection** | Leiden clustering with resolution scaled to graph size |
@@ -401,6 +402,12 @@ Add `--verify` to either command to compare the figures with OpenAI's `cl100k_ba
 
 The same `context_savings` metadata is attached to the JSON responses of the `get_impact_radius`, `get_review_context`, `detect_changes` and `get_architecture_overview` MCP tools.
 
+For cumulative estimates by repository, enable `CRG_TRACK_USAGE=1` on the analysing
+process and query `code-review-graph usage-stats` or `get_usage_stats_tool`.
+The local ledger counts each observed Git change snapshot once; re-reading the
+same change updates its measurement. See [local usage accounting](docs/LOCAL_USAGE.md)
+for the baseline, collection scope, client labels, and limitations.
+
 </details>
 
 <details>
@@ -444,7 +451,7 @@ See [docs/COMMANDS.md](docs/COMMANDS.md#standalone-daemon-cli-crg-daemon) for th
 </details>
 
 <details>
-<summary><strong>30 MCP tools</strong></summary>
+<summary><strong>31 MCP tools</strong></summary>
 <br>
 
 The assistant uses these once the graph is built.
@@ -461,6 +468,7 @@ The assistant uses these once the graph is built.
 | `semantic_search_nodes_tool` | Search code entities by name or meaning |
 | `embed_graph_tool` | Compute vector embeddings for semantic search |
 | `list_graph_stats_tool` | Graph size and health |
+| `get_usage_stats_tool` | Cumulative local estimates by Git change snapshot |
 | `get_docs_section_tool` | Retrieve documentation sections |
 | `find_large_functions_tool` | Functions, classes or files above a line-count threshold |
 | `list_flows_tool` | Execution flows sorted by criticality |
@@ -521,6 +529,8 @@ pip install "code-review-graph[all]"                 # All optional dependencies
 | `CRG_GIT_TIMEOUT` | Timeout in seconds for Git operations (build, update, watch) | `30` |
 | `CRG_DISCOVERY_TIMEOUT` | Timeout in seconds for each Git command that discovers what changed, when a review tool or command was not given an explicit file list. Running out reports an error, never "no changes" | `5`, or `CRG_GIT_TIMEOUT` when you set that explicitly |
 | `CRG_DATA_DIR` | Directory for graph databases and generated artefacts | - |
+| `CRG_TRACK_USAGE` | Record local token estimates for observed Git change snapshots | `0` |
+| `CRG_USAGE_CLIENT` | Client label stored with the latest snapshot measurement | `unknown` |
 | `CRG_HOOK_WORKTREES` | Set to `1` to let the pre-commit hook run in linked git worktrees | - |
 | `CRG_EMBEDDING_MODEL` | Default model for local vector embeddings | `all-MiniLM-L6-v2` |
 | `CRG_ACCEPT_CLOUD_EMBEDDINGS` | Set to `1` to suppress the cloud embedding egress warning | - |
@@ -582,7 +592,7 @@ code-review-graph embed --provider voyage --model voyage-code-3
 
 #### Tool Filtering
 
-CRG exposes 30 MCP tools by default. To limit the server to a subset, use `--tools` or the `CRG_TOOLS` environment variable:
+CRG exposes 31 MCP tools by default. To limit the server to a subset, use `--tools` or the `CRG_TOOLS` environment variable:
 
 ```bash
 # CLI flag

@@ -247,7 +247,7 @@ def _server_env(home: Path, crg_home: Path, extra: dict[str, str] | None = None)
         "CRG_PARSE_EXECUTOR", "CRG_SERIAL_PARSE",
         "CRG_OPENAI_API_KEY", "CRG_OPENAI_BASE_URL", "CRG_OPENAI_MODEL",
         "CRG_EMBEDDING_MODEL", "GOOGLE_API_KEY", "MINIMAX_API_KEY",
-        "VOYAGE_API_KEY",
+        "VOYAGE_API_KEY", "CRG_TRACK_USAGE", "CRG_USAGE_CLIENT",
     ):
         env.pop(key, None)
     env["PYTHONPATH"] = os.pathsep.join(
@@ -461,7 +461,7 @@ class Walk:
 
 
 async def test_every_registered_tool_returns_real_content(unbuilt: Fixture) -> None:
-    """Drive all 30 tools through one client session and assert on payloads.
+    """Drive all 31 tools through one client session and assert on payloads.
 
     The canary is at the bottom: the set of tools exercised here has to equal
     the set the server advertises over ``tools/list``. A tool added to
@@ -480,8 +480,8 @@ async def test_every_registered_tool_returns_real_content(unbuilt: Fixture) -> N
         async with _client(fixture, embed_env) as session:
             listed = await asyncio.wait_for(session.list_tools(), timeout=CALL_TIMEOUT)
             registered = {tool.name for tool in listed.tools}
-            assert len(registered) == 30, (
-                f"expected the documented 30 tools, tools/list advertised {len(registered)}"
+            assert len(registered) == 31, (
+                f"expected the documented 31 tools, tools/list advertised {len(registered)}"
             )
 
             # --- 1. build -------------------------------------------------
@@ -657,6 +657,13 @@ async def test_every_registered_tool_returns_real_content(unbuilt: Fixture) -> N
             assert docs["section"] == "usage"
             assert "code-review-graph" in docs["content"], docs["content"][:200]
             walk.verify("get_docs_section_tool", ["status", "section", "content"])
+
+            usage = await _call(session, "get_usage_stats_tool", {})
+            assert usage["status"] == "ok", usage
+            assert usage["estimated"] is True
+            assert usage["totals"]["snapshots"] == 0
+            assert "_graph" not in usage
+            walk.verify("get_usage_stats_tool", ["status", "estimated", "totals"])
 
             # --- 11. large functions --------------------------------------
             large = await _call(
@@ -1000,7 +1007,7 @@ NO_REQUIRED_ARGS = {
     "refactor_tool", "generate_wiki_tool", "get_hub_nodes_tool",
     "get_bridge_nodes_tool", "get_knowledge_gaps_tool",
     "get_surprising_connections_tool", "get_suggested_questions_tool",
-    "list_repos_tool",
+    "list_repos_tool", "get_usage_stats_tool",
 }
 
 # tool -> arguments with one required field dropped.
@@ -1025,6 +1032,7 @@ WRONG_TYPE_CASES: dict[str, dict[str, Any]] = {
     "semantic_search_nodes_tool": {"query": "helper", "limit": "many"},
     "embed_graph_tool": {"provider": 12},
     "list_graph_stats_tool": {"repo_root": 5},
+    "get_usage_stats_tool": {"days": "many"},
     "get_docs_section_tool": {"section_name": 5},
     "find_large_functions_tool": {"min_lines": "fifty"},
     "list_flows_tool": {"limit": [1]},
@@ -1070,6 +1078,7 @@ OUT_OF_RANGE_REFUSED: dict[str, dict[str, Any]] = {
     "embed_graph_tool": {"provider": "no_such_provider"},
     "get_docs_section_tool": {"section_name": "no_such_section"},
     "list_graph_stats_tool": {"repo_root": "/nonexistent-surface-root"},
+    "get_usage_stats_tool": {"days": 0},
     "generate_wiki_tool": {"repo_root": "/nonexistent-surface-root"},
     "run_postprocess_tool": {"repo_root": "/nonexistent-surface-root"},
     "get_suggested_questions_tool": {"repo_root": "/nonexistent-surface-root"},
@@ -1219,6 +1228,7 @@ REPO_ROOT_TOOLS: dict[str, dict[str, Any]] = {
     "semantic_search_nodes_tool": {"query": "helper"},
     "embed_graph_tool": {},
     "list_graph_stats_tool": {},
+    "get_usage_stats_tool": {},
     "find_large_functions_tool": {},
     "list_flows_tool": {},
     "get_flow_tool": {"flow_id": 1},

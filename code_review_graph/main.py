@@ -14,6 +14,7 @@ import asyncio
 import logging
 import os
 import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
@@ -66,6 +67,7 @@ from .tools import (
     traverse_graph_func,
     with_provenance,
 )
+from .usage import UsageCapture, get_usage_stats, record_usage, tracking_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +137,7 @@ async def _offload(
     provenance: bool = True,
     bounded: bool = True,
     timeout_hint: str = _TIMEOUT_HINT,
+    track_usage: bool = True,
 ) -> dict:
     """Run one blocking tool body off the event loop, optionally bounded.
 
@@ -186,28 +189,50 @@ async def _offload(
             their builds would make the documented remedy a new bug.
         timeout_hint: Advice appended to the timeout message.
     """
-    def _run() -> dict:
+    capture = UsageCapture() if track_usage and tracking_enabled() else None
+
+    def _body() -> dict:
         result = work()
         return with_provenance(result, root) if provenance else result
 
-    tool_timeout = env_int("CRG_TOOL_TIMEOUT", 0)
-    if not bounded or tool_timeout <= 0:
-        return await _run_off_loop(_run)
+    def _run() -> dict:
+        if capture is None:
+            return _body()
+        with capture.activate():
+            result = _body()
+            capture.verify()
+            return result
 
+    async def _record(result: dict) -> dict:
+        if capture is not None and capture.snapshot is not None and result.get("status") == "ok":
+            duration_ms = round((time.perf_counter() - capture.started) * 1000)
+            await _run_off_loop(lambda: record_usage(
+                tool_name, result, root, capture, duration_ms,
+            ))
+        return result
+
+    tool_timeout = env_int("CRG_TOOL_TIMEOUT", 0)
     try:
-        return await asyncio.wait_for(_run_off_loop(_run), timeout=tool_timeout)
+        if not bounded or tool_timeout <= 0:
+            result = await _run_off_loop(_run)
+        else:
+            result = await asyncio.wait_for(_run_off_loop(_run), timeout=tool_timeout)
     except asyncio.TimeoutError:
+        if not bounded or tool_timeout <= 0:
+            raise
         message = f"{tool_name} timed out after {tool_timeout}s. {timeout_hint}"
         error_response = {
             "status": "error",
             "error": message,
             "summary": message,
         }
-        if not provenance:
-            return error_response
-        return await _run_off_loop(
+        result = await _run_off_loop(
             lambda: with_provenance(error_response, root)
-        )
+        ) if provenance else error_response
+    except Exception:
+        await _record({"status": "error"})
+        raise
+    return await _record(result)
 
 
 # What an agent reads before it loads any of these tools: with deferred tool
@@ -629,6 +654,32 @@ async def list_graph_stats_tool(
         "list_graph_stats_tool",
         lambda: list_graph_stats(repo_root=root),
         root,
+    )
+
+
+@mcp.tool()
+async def get_usage_stats_tool(
+    repo_root: Optional[str] = None,
+    days: Optional[int] = None,
+    client: Optional[str] = None,
+) -> dict:
+    """Read cumulative local token estimates for distinct Git change snapshots.
+
+    Enable collection on the MCP server with CRG_TRACK_USAGE=1. Optionally
+    label that server with CRG_USAGE_CLIENT (e.g. codex or claude). days is a
+    rolling UTC window of first observations (1-3660); omit it for all history.
+    client filters the latest measuring server label. Repeated analysis of the
+    same snapshot replaces its estimate rather than adding another saving.
+    No graph build is required. This query is never recorded. Estimates compare
+    full changed files with analysis payloads, not billed tokens or time saved.
+    """
+    root = _resolve_repo_root(repo_root)
+    return await _offload(
+        "get_usage_stats_tool",
+        lambda: get_usage_stats(repo_root=root, days=days, client=client),
+        root,
+        provenance=False,
+        track_usage=False,
     )
 
 

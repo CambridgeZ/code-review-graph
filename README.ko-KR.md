@@ -444,7 +444,7 @@ alias = "project-b"
 </details>
 
 <details>
-<summary><strong>MCP 도구 30개</strong></summary>
+<summary><strong>MCP 도구 31개</strong></summary>
 <br>
 
 그래프를 만들고 나면 어시스턴트가 이 도구들을 씁니다.
@@ -461,6 +461,7 @@ alias = "project-b"
 | `semantic_search_nodes_tool` | 이름이나 의미로 코드 개체 검색 |
 | `embed_graph_tool` | 시맨틱 검색용 벡터 임베딩 계산 |
 | `list_graph_stats_tool` | 그래프 크기와 상태 |
+| `get_usage_stats_tool` | Git 변경 스냅샷별 로컬 토큰 추정치 ([guide](docs/LOCAL_USAGE.md)) |
 | `get_docs_section_tool` | 문서 절 가져오기 |
 | `find_large_functions_tool` | 줄 수 기준을 넘는 함수, 클래스, 파일 |
 | `list_flows_tool` | 중요도순으로 정렬한 실행 흐름 |
@@ -582,7 +583,7 @@ code-review-graph embed --provider voyage --model voyage-code-3
 
 #### 도구 필터링
 
-CRG는 기본으로 MCP 도구 30개를 노출합니다. 서버를 일부로 제한하려면 `--tools`나 `CRG_TOOLS` 환경 변수를 쓰세요.
+CRG는 기본으로 MCP 도구 31개를 노출합니다. 서버를 일부로 제한하려면 `--tools`나 `CRG_TOOLS` 환경 변수를 쓰세요.
 
 ```bash
 # CLI flag

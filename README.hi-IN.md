@@ -444,7 +444,7 @@ alias = "project-b"
 </details>
 
 <details>
-<summary><strong>30 MCP टूल</strong></summary>
+<summary><strong>31 MCP टूल</strong></summary>
 <br>
 
 ग्राफ़ बन जाने के बाद असिस्टेंट इनका उपयोग करता है।
@@ -461,6 +461,7 @@ alias = "project-b"
 | `semantic_search_nodes_tool` | नाम या अर्थ से कोड इकाइयाँ खोजना |
 | `embed_graph_tool` | सिमेंटिक खोज के लिए वेक्टर एम्बेडिंग बनाना |
 | `list_graph_stats_tool` | ग्राफ़ का आकार और स्वास्थ्य |
+| `get_usage_stats_tool` | Git बदलाव स्नैपशॉट के अनुसार स्थानीय token अनुमान ([guide](docs/LOCAL_USAGE.md)) |
 | `get_docs_section_tool` | दस्तावेज़ के खंड लाना |
 | `find_large_functions_tool` | पंक्ति-सीमा से बड़े फ़ंक्शन, क्लास या फ़ाइलें |
 | `list_flows_tool` | महत्ता के क्रम में निष्पादन प्रवाह |
@@ -582,7 +583,7 @@ code-review-graph embed --provider voyage --model voyage-code-3
 
 #### टूल फ़िल्टरिंग
 
-CRG डिफ़ॉल्ट रूप से 30 MCP टूल दिखाता है। सर्वर को एक उपसमूह तक सीमित करने के लिए `--tools` या `CRG_TOOLS` पर्यावरण चर का उपयोग करें:
+CRG डिफ़ॉल्ट रूप से 31 MCP टूल दिखाता है। सर्वर को एक उपसमूह तक सीमित करने के लिए `--tools` या `CRG_TOOLS` पर्यावरण चर का उपयोग करें:
 
 ```bash
 # CLI flag
